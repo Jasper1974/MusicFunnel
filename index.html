@@ -854,9 +854,22 @@ async function stopRec(){
     try{
       const r=await fetch('https://api.audd.io/',{method:'POST',body:fd});
       const d=await r.json();
-      if(d.status==='success'&&d.result)showIdResult(d.result);
-      else{$('idErr').textContent="Couldn't identify that. Record 8-12s while music is clearly audible, close to the speaker.";$('idErr').classList.add('on');}
-    }catch(e){$('idErr').textContent='ID failed: '+e.message;$('idErr').classList.add('on');}
+      console.log('AudD response:',d);
+      if(d.status==='success'&&d.result){
+        showIdResult(d.result);
+      }else if(d.status==='error'){
+        // AudD returned an explicit error — show it
+        $('idErr').textContent='AudD error: '+(d.error?.error_message||JSON.stringify(d.error))+' (code '+(d.error?.error_code||'?')+')';
+        $('idErr').classList.add('on');
+      }else{
+        // success but no match — recording quality issue
+        $('idErr').textContent="No match found. The recording reached AudD but the song wasn't recognized — try 10s closer to the speaker with volume up.";
+        $('idErr').classList.add('on');
+      }
+    }catch(e){
+      $('idErr').textContent='Network error reaching audd.io: '+e.message+'. If you are in China, audd.io may be slow or blocked — try again or test after deploying.';
+      $('idErr').classList.add('on');
+    }
     finally{$('idStatus').classList.remove('on');$('listenHint').textContent='Tap to start listening · tap again to stop';}
     mediaRecorder.stream.getTracks().forEach(t=>t.stop());
   };
