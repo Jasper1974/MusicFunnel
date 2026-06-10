@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Music Funnel">
+<meta name="theme-color" content="#0a0e1a">
+<title>Music Funnel · Find exactly the song you're looking for</title>
+<link rel="manifest" href="manifest.json">
+<style>
+:root {
+  --bg:#0a0e1a; --surface:#111827; --card:#1a2235; --border:#1f2d45;
+  --orange:#f97316;
+  --text:#f1f5f9; --muted:#64748b; --subtle:#94a3b8;
+  --green:#22c55e; --red:#ef4444; --blue:#60a5fa; --purple:#a78bfa;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:16px;-webkit-font-smoothing:antialiased;overscroll-behavior:none}
+.app{display:flex;flex-direction:column;height:100dvh;max-width:480px;margin:0 auto}
+
+/* Header */
+.header{padding:14px 18px 0;flex-shrink:0}
+.header-row{display:flex;align-items:center;justify-content:space-between}
+.wordmark{font-family:Georgia,"Times New Roman",serif;font-size:21px;font-weight:700;letter-spacing:-.5px}
+.wordmark span{color:var(--orange)}
+.tagline{font-size:11px;color:var(--muted);margin-top:1px;letter-spacing:.06em;text-transform:uppercase}
+.settings-toggle{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:4px}
+.settings-panel{display:none;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-top:10px}
+.settings-panel.on{display:block}
+.settings-panel .hint{font-size:11px;color:var(--muted);margin-top:6px;line-height:1.6}
+
+/* Tabs */
+.tabs{display:flex;gap:4px;padding:12px 18px 0;flex-shrink:0}
+.tab{flex:1;padding:9px 4px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:12px;font-weight:500;cursor:pointer;text-align:center;transition:all .15s;font-family:inherit;line-height:1.3}
+.tab.active{background:var(--orange);border-color:var(--orange);color:#fff;font-weight:700}
+.tab-icon{display:block;font-size:16px;margin-bottom:2px}
+
+/* Body */
+.body{flex:1;overflow-y:auto;padding:14px 18px 40px;-webkit-overflow-scrolling:touch}
+.panel{display:none}.panel.active{display:block}
+
+/* Form */
+label.lbl{display:block;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
+textarea,input[type=text],select{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:inherit;font-size:15px;padding:11px 13px;transition:border-color .15s;-webkit-appearance:none}
+textarea{min-height:84px;resize:none;line-height:1.6}
+textarea:focus,input[type=text]:focus,select:focus{outline:none;border-color:var(--orange)}
+select{cursor:pointer}
+.gap{margin-top:14px}.gap-s{margin-top:10px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}
+.input-hint{font-size:11px;color:var(--muted);margin-top:7px;line-height:1.6}
+
+/* Filter section */
+.filter-section{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-top:12px}
+.filter-section-title{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
+.filter-section-title .arrow{font-size:9px;transition:transform .2s}
+.filter-section-title.open .arrow{transform:rotate(90deg)}
+.filter-body{display:none;margin-top:10px}.filter-body.open{display:block}
+
+/* Tags */
+.tag-group{margin-bottom:12px}
+.tag-group:last-child{margin-bottom:0}
+.tag-group-label{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
+.tag-sub{font-size:10px;color:var(--muted);margin-bottom:5px;letter-spacing:.06em;text-transform:uppercase}
+.tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
+.tags:last-child{margin-bottom:0}
+.tag{font-size:12px;padding:5px 11px;border:1px solid var(--border);border-radius:999px;color:var(--subtle);background:transparent;cursor:pointer;font-family:inherit;line-height:1.3;transition:all .12s;user-select:none}
+.tag.sel{border-color:var(--orange);color:var(--orange);background:rgba(249,115,22,.08)}
+.tag.sel-blue{border-color:var(--blue);color:var(--blue);background:rgba(96,165,250,.08)}
+.tag.sel-green{border-color:var(--green);color:var(--green);background:rgba(34,197,94,.08)}
+.tag.sel-purple{border-color:var(--purple);color:var(--purple);background:rgba(167,139,250,.08)}
+
+/* Buttons */
+.btn-primary{width:100%;padding:13px;margin-top:13px;background:var(--orange);border:none;border-radius:10px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit}
+.btn-primary:disabled{background:var(--border);color:var(--muted);cursor:wait}
+.btn-secondary{background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--subtle);font-size:13px;padding:8px 14px;cursor:pointer;font-family:inherit}
+.btn-icon{background:none;border:1px solid var(--border);border-radius:6px;color:var(--subtle);font-size:13px;padding:6px 9px;cursor:pointer;flex-shrink:0;font-family:inherit}
+.btn-icon:active{border-color:var(--orange);color:var(--orange)}
+
+/* Status / error */
+.status-bar{display:none;margin-top:13px;padding:10px 13px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--subtle);font-family:"SF Mono",Consolas,monospace;align-items:center;gap:8px}
+.status-bar.on{display:flex}
+.spin{width:13px;height:13px;border:2px solid var(--border);border-top-color:var(--orange);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.err-box{display:none;margin-top:13px;padding:11px 13px;background:#1f1010;border:1px solid #5a2020;border-radius:8px;font-size:13px;color:#f87171;line-height:1.6}
+.err-box.on{display:block}
+
+/* Results */
+.results{margin-top:18px;display:none}.results.on{display:block}
+.results-header{display:flex;align-items:center;gap:8px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.results-title{font-family:Georgia,serif;font-size:15px;font-weight:700;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.seed-banner{display:none;font-size:12px;color:var(--subtle);background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-top:10px;line-height:1.5}
+.seed-banner.on{display:block}
+.seed-banner b{color:var(--orange)}
+
+/* Sort bar */
+.sort-bar{display:flex;gap:5px;flex-wrap:wrap;padding:10px 0 8px;border-bottom:1px solid var(--border)}
+.sort-btn{font-size:11px;font-weight:600;padding:5px 11px;border:1px solid var(--border);border-radius:999px;color:var(--muted);background:transparent;cursor:pointer;font-family:inherit;white-space:nowrap;transition:all .12s}
+.sort-btn.active{background:var(--surface);border-color:var(--orange);color:var(--orange)}
+.sort-btn.active::before{content:'› '}
+
+/* Song card — collapsed by default */
+.song-card{border-bottom:1px solid var(--border)}
+.song-card-header{display:flex;gap:12px;align-items:center;padding:14px 0;cursor:pointer;user-select:none}
+.song-card-header:active{opacity:.8}
+.song-art{width:52px;height:52px;border-radius:8px;background:var(--surface);object-fit:cover;flex-shrink:0;border:1px solid var(--border)}
+.song-art-ph{width:52px;height:52px;border-radius:8px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;color:var(--muted)}
+.song-header-info{flex:1;min-width:0}
+.song-title{font-size:15px;font-weight:700;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.song-artist{font-size:13px;color:var(--subtle);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.song-header-right{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0}
+.song-score{font-size:12px;font-weight:700;color:var(--orange);font-family:"SF Mono",Consolas,monospace}
+.song-mini-tags{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;max-width:110px}
+.song-mini-tag{font-size:10px;padding:2px 7px;border-radius:4px;font-weight:600}
+.expand-chevron{font-size:12px;color:var(--muted);margin-top:2px;transition:transform .2s;line-height:1}
+.song-card.open .expand-chevron{transform:rotate(90deg)}
+
+/* Collapsed spectrum — thin bar under header */
+.song-card-bar{height:2px;background:var(--border);margin:0 0 0 64px;border-radius:999px;overflow:hidden}
+.song-card-bar-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#f97316,#fb923c);transition:width .7s cubic-bezier(.3,1,.4,1)}
+
+/* Expanded details */
+.song-details{display:none;padding:0 0 16px}
+.song-card.open .song-details{display:block}
+.song-album{font-size:12px;color:var(--muted);margin-bottom:10px;font-family:"SF Mono",Consolas,monospace;letter-spacing:.03em}
+.song-meta-line{font-size:11px;color:var(--muted);margin-bottom:10px;font-family:'SF Mono',Consolas,monospace;letter-spacing:.03em}
+.verify-row{display:flex;align-items:center;gap:6px;margin-bottom:10px}
+.badge-verified{font-size:10px;color:var(--green)}
+.badge-unverified{font-size:10px;color:var(--muted)}
+
+/* Taxonomy */
+.song-taxonomy{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px}
+.tx-tag{font-size:10px;padding:3px 8px;border-radius:4px;font-weight:600;letter-spacing:.04em}
+.tx-genre{background:#1a2035;color:#7dd3fc;border:1px solid #1e3a5f}
+.tx-scene{background:#1a2a1a;color:#86efac;border:1px solid #1e4a2a}
+.tx-mood {background:#2a1a35;color:#d8b4fe;border:1px solid #3a2a5a}
+.tx-fn   {background:#2a2210;color:#fcd34d;border:1px solid #4a3810}
+
+/* Spectrum (in details) */
+.spectrum-wrap{margin-bottom:12px}
+.spectrum-label{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:4px;font-family:"SF Mono",Consolas,monospace;letter-spacing:.06em;text-transform:uppercase}
+.spectrum-track{height:3px;background:var(--border);border-radius:999px;overflow:hidden}
+.spectrum-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#f97316,#fb923c);transition:width .7s cubic-bezier(.3,1,.4,1)}
+
+.song-reason{font-size:14px;line-height:1.75;color:#cbd5e1;margin-bottom:10px;font-family:Georgia,serif}
+.match-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px}
+.match-tag{font-size:11px;padding:3px 9px;border:1px solid #1e3a2a;border-radius:4px;color:#4ade80;background:#0d1f14}
+.card-section-lbl{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+
+/* Links */
+.platform-links,.artist-links{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}
+.platform-btn,.artist-btn{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:500;padding:6px 11px;border-radius:7px;text-decoration:none;border:1px solid var(--border);color:var(--subtle);background:var(--surface);cursor:pointer;font-family:inherit;white-space:nowrap}
+.platform-btn:active,.artist-btn:active{border-color:var(--orange);color:var(--orange)}
+.platform-btn.songlink{border-color:#3a2f10;color:#fbbf24;font-weight:700}
+.platform-btn.spotify,.artist-btn.spotify-artist{border-color:#1d3a21;color:#1db954}
+.platform-btn.apple,.artist-btn.apple-artist{border-color:#3a1a1a;color:#fc3c44}
+.platform-btn.ytm,.artist-btn.yt-ch{border-color:#3a2020;color:#ff4444}
+.platform-btn.amazon{border-color:#1a2a3a;color:#00a8e1}
+.artist-btn.ig{border-color:#3a1a3a;color:#e1306c}
+.artist-btn.tw{border-color:#1a2a3a;color:#1d9bf0}
+.platform-btn.seed-btn{border-color:var(--orange);color:var(--orange)}
+
+/* Identify */
+.listen-section{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;text-align:center;margin-bottom:14px}
+.listen-btn{width:76px;height:76px;border-radius:50%;background:var(--orange);border:none;cursor:pointer;font-size:30px;display:inline-flex;align-items:center;justify-content:center;transition:transform .1s;margin:10px 0}
+.listen-btn:active{transform:scale(.94)}
+.listen-btn.recording{background:var(--red);animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{50%{transform:scale(1.06)}}
+.listen-hint{font-size:13px;color:var(--muted);line-height:1.5}
+.id-result{display:none;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;margin-top:14px}
+.id-result.on{display:block}
+.id-inner{display:flex;gap:12px;align-items:center}
+.id-art{width:52px;height:52px;border-radius:7px;object-fit:cover}
+.id-info h3{font-size:16px;font-weight:700}
+.id-info p{font-size:13px;color:var(--subtle);margin-top:2px}
+
+/* Share modal */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;align-items:flex-end;justify-content:center}
+.modal-bg.on{display:flex}
+.modal{background:var(--surface);border-radius:16px 16px 0 0;width:100%;max-width:480px;padding:20px 20px 36px;max-height:80dvh;overflow-y:auto}
+.modal h3{font-family:Georgia,serif;font-size:17px;margin-bottom:14px}
+.share-card{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:16px}
+.share-card-title{font-family:Georgia,serif;font-size:13px;font-weight:700;color:var(--orange);margin-bottom:10px}
+.share-song{font-size:13px;color:var(--subtle);padding:5px 0;border-bottom:1px solid var(--border)}
+.share-song:last-child{border-bottom:none}
+.share-song strong{color:var(--text)}
+.share-footer{font-size:10px;color:var(--muted);margin-top:12px;text-align:right;font-family:monospace;letter-spacing:.06em}
+.modal-actions{display:flex;gap:8px;margin-top:14px}
+.btn-copy{flex:1;padding:12px;background:var(--orange);border:none;border-radius:8px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
+
+/* Toast */
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(14px);background:#1e293b;border:1px solid var(--border);color:var(--text);font-size:13px;padding:9px 18px;border-radius:999px;opacity:0;transition:all .22s;pointer-events:none;z-index:200;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.key-row{display:flex;gap:8px;align-items:center;margin-top:6px}
+.key-row input{flex:1;font-size:13px}
+.key-row a{font-size:12px;color:var(--orange);text-decoration:none;white-space:nowrap}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-row">
+      <div>
+        <div class="wordmark">Music<span>Funnel</span></div>
+        <div class="tagline">Describe it · Find it · Hear it anywhere</div>
+      </div>
+      <button class="settings-toggle" id="settingsToggle">⚙</button>
+    </div>
+    <div class="settings-panel" id="settingsPanel">
+      <label class="lbl">AudD API Key — for Song Identify</label>
+      <div class="key-row">
+        <input type="text" id="auddKey" placeholder="Paste your AudD token here" autocomplete="off">
+        <a href="https://audd.io" target="_blank">Get free ↗</a>
+      </div>
+      <div id="auddSaved" style="display:none;font-size:11px;color:var(--green);margin-top:5px">✓ Key saved — go to the Identify tab to test</div>
+
+      <label class="lbl" style="margin-top:14px">Custom AI Endpoint (optional)</label>
+      <input type="text" id="apiBase" placeholder="Base URL e.g. https://openox.tech/v1" autocomplete="off" style="font-size:13px">
+      <div class="key-row">
+        <input type="text" id="apiKey" placeholder="API Key" autocomplete="off">
+      </div>
+      <div class="key-row">
+        <input type="text" id="apiModel" placeholder="Model e.g. claude-sonnet-4-6" autocomplete="off">
+      </div>
+      <div class="hint">Leave empty inside Claude preview (built-in AI works automatically). For deployed versions, set your OpenAI-compatible relay here. Note: "Include recent releases" web search only works with the built-in AI.</div>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab active" data-tab="describe"><span class="tab-icon">✦</span>Find Songs</button>
+    <button class="tab" data-tab="identify"><span class="tab-icon">◎</span>Identify</button>
+  </div>
+
+  <div class="body">
+
+    <!-- TAB 1 · FIND SONGS -->
+    <div class="panel active" id="panel-describe">
+      <div class="gap-s"></div>
+      <label class="lbl">Describe what you want to hear</label>
+      <textarea id="descQuery" placeholder="Tell me about the song you're looking for — artist, language, era, scene, style, what to avoid. Or paste a lyric fragment like &quot;we found love in a hopeless place&quot;. The more detail, the better."></textarea>
+
+      <!-- FILTERS -->
+      <div class="filter-section">
+        <div class="filter-section-title" id="filterToggle">
+          <span class="arrow">›</span> Filters &amp; Tags <span style="font-weight:400;letter-spacing:0;text-transform:none;margin-left:4px" id="filterCount"></span>
+        </div>
+        <div class="filter-body" id="filterBody">
+
+          <div class="tag-group">
+            <div class="tag-group-label">🎤 Artist / Voice</div>
+            <div class="tags">
+              <button class="tag" data-group="artist">Male vocal</button>
+              <button class="tag" data-group="artist">Female vocal</button>
+              <button class="tag" data-group="artist">Duo / Band</button>
+              <button class="tag" data-group="artist">Instrumental</button>
+              <button class="tag" data-group="artist">Raspy voice</button>
+              <button class="tag" data-group="artist">Smooth / silky</button>
+              <button class="tag" data-group="artist">Falsetto</button>
+              <button class="tag" data-group="artist">Deep / baritone</button>
+              <button class="tag" data-group="artist">Singer-songwriter</button>
+            </div>
+          </div>
+
+          <div class="tag-group">
+            <div class="tag-group-label">🎸 Genre</div>
+            <div class="tags">
+              <button class="tag" data-group="genre">Indie rock</button>
+              <button class="tag" data-group="genre">Alternative</button>
+              <button class="tag" data-group="genre">Post-rock</button>
+              <button class="tag" data-group="genre">Folk</button>
+              <button class="tag" data-group="genre">Country</button>
+              <button class="tag" data-group="genre">R&amp;B / Soul</button>
+              <button class="tag" data-group="genre">Jazz</button>
+              <button class="tag" data-group="genre">Classical</button>
+              <button class="tag" data-group="genre">New Age</button>
+              <button class="tag" data-group="genre">Electronic</button>
+              <button class="tag" data-group="genre">Ambient</button>
+              <button class="tag" data-group="genre">Hip-hop</button>
+              <button class="tag" data-group="genre">Pop</button>
+              <button class="tag" data-group="genre">Metal</button>
+              <button class="tag" data-group="genre">Blues</button>
+              <button class="tag" data-group="genre">Reggae</button>
+              <button class="tag" data-group="genre">City Pop</button>
+              <button class="tag" data-group="genre">Bossa Nova</button>
+              <button class="tag" data-group="genre">Cantopop</button>
+              <button class="tag" data-group="genre">Mandopop</button>
+              <button class="tag" data-group="genre">K-Pop</button>
+              <button class="tag" data-group="genre">J-Pop</button>
+            </div>
+          </div>
+
+          <div class="tag-group">
+            <div class="tag-group-label">🌆 Scene / Moment</div>
+            <div class="tags">
+              <button class="tag" data-group="scene">Late night drive</button>
+              <button class="tag" data-group="scene">Morning coffee</button>
+              <button class="tag" data-group="scene">Deep focus / coding</button>
+              <button class="tag" data-group="scene">Running / workout</button>
+              <button class="tag" data-group="scene">Rainy day indoors</button>
+              <button class="tag" data-group="scene">House party</button>
+              <button class="tag" data-group="scene">Romantic dinner</button>
+              <button class="tag" data-group="scene">Solo travel</button>
+              <button class="tag" data-group="scene">Summer road trip</button>
+              <button class="tag" data-group="scene">Study session</button>
+              <button class="tag" data-group="scene">Sunday morning</button>
+              <button class="tag" data-group="scene">Bar / lounge</button>
+              <button class="tag" data-group="scene">Hiking / outdoors</button>
+            </div>
+          </div>
+
+          <div class="tag-group">
+            <div class="tag-group-label">✦ Function / Mood</div>
+            <div class="tags">
+              <button class="tag" data-group="fn">Stress relief</button>
+              <button class="tag" data-group="fn">Sleep aid</button>
+              <button class="tag" data-group="fn">Energy boost</button>
+              <button class="tag" data-group="fn">Melancholy / cry it out</button>
+              <button class="tag" data-group="fn">Feel-good / uplifting</button>
+              <button class="tag" data-group="fn">Motivational</button>
+              <button class="tag" data-group="fn">Romantic</button>
+              <button class="tag" data-group="fn">Nostalgic</button>
+              <button class="tag" data-group="fn">Anger release</button>
+              <button class="tag" data-group="fn">Meditation / calm</button>
+              <button class="tag" data-group="fn">Euphoric</button>
+              <button class="tag" data-group="fn">Introspective</button>
+            </div>
+          </div>
+
+          <div class="tag-group">
+            <div class="tag-group-label">🌐 Language</div>
+            <div class="tag-sub">Europe &amp; Americas</div>
+            <div class="tags">
+              <button class="tag" data-group="lang">English</button>
+              <button class="tag" data-group="lang">Spanish</button>
+              <button class="tag" data-group="lang">French</button>
+              <button class="tag" data-group="lang">Portuguese</button>
+              <button class="tag" data-group="lang">Italian</button>
+              <button class="tag" data-group="lang">German</button>
+              <button class="tag" data-group="lang">Russian</button>
+              <button class="tag" data-group="lang">Swedish</button>
+              <button class="tag" data-group="lang">Norwegian</button>
+              <button class="tag" data-group="lang">Icelandic</button>
+            </div>
+            <div class="tag-sub">East Asia</div>
+            <div class="tags">
+              <button class="tag" data-group="lang">Mandarin</button>
+              <button class="tag" data-group="lang">Cantonese</button>
+              <button class="tag" data-group="lang">Taiwanese Hokkien</button>
+              <button class="tag" data-group="lang">Japanese</button>
+              <button class="tag" data-group="lang">Korean</button>
+            </div>
+            <div class="tag-sub">South &amp; SE Asia · Middle East · Africa</div>
+            <div class="tags">
+              <button class="tag" data-group="lang">Hindi</button>
+              <button class="tag" data-group="lang">Tamil</button>
+              <button class="tag" data-group="lang">Indonesian / Malay</button>
+              <button class="tag" data-group="lang">Thai</button>
+              <button class="tag" data-group="lang">Vietnamese</button>
+              <button class="tag" data-group="lang">Arabic</button>
+              <button class="tag" data-group="lang">Turkish</button>
+              <button class="tag" data-group="lang">Swahili</button>
+              <button class="tag" data-group="lang">Afrikaans</button>
+            </div>
+            <div class="tag-sub">Special</div>
+            <div class="tags">
+              <button class="tag" data-group="lang">Instrumental</button>
+              <button class="tag" data-group="lang">Multilingual / Mixed</button>
+              <button class="tag" data-group="lang">Constructed / Fictional</button>
+            </div>
+          </div>
+
+          <div class="row2">
+            <div>
+              <label class="lbl">Era</label>
+              <select id="descEra">
+                <option value="">Any</option>
+                <option>2020s</option><option>2010s</option><option>2000s</option>
+                <option>1990s</option><option>1980s or earlier</option>
+              </select>
+            </div>
+            <div>
+              <label class="lbl">Obscurity</label>
+              <select id="descObs">
+                <option value="">Any</option>
+                <option>Well-known is fine</option>
+                <option>Semi-obscure</option>
+                <option>Deep cuts only</option>
+              </select>
+            </div>
+          </div>
+          <div class="row2">
+            <div>
+              <label class="lbl">How many</label>
+              <select id="descCount">
+                <option value="6">6 songs</option>
+                <option value="8" selected>8 songs</option>
+                <option value="10">10 songs</option>
+              </select>
+            </div>
+            <div></div>
+          </div>
+
+        </div>
+      </div>
+
+      <button class="btn-primary" id="descGo">Find songs</button>
+      <div class="status-bar" id="descStatus"><div class="spin"></div><span id="descStatusText">Searching…</span></div>
+      <div class="err-box" id="descErr"></div>
+
+      <div class="seed-banner" id="seedBanner"></div>
+
+      <div class="results" id="descResults">
+        <div class="results-header">
+          <div class="results-title" id="descTitle">Your playlist</div>
+          <button class="btn-icon" id="descMore" title="More like this">↻</button>
+          <button class="btn-icon" id="descShare" title="Share">↗</button>
+        </div>
+        <div class="sort-bar" id="descSortBar">
+          <button class="sort-btn active" data-sort="match">Best match</button>
+          <button class="sort-btn" data-sort="popular">Popular</button>
+          <button class="sort-btn" data-sort="hidden">Hidden gems</button>
+          <button class="sort-btn" data-sort="rising">Rising</button>
+          <button class="sort-btn" data-sort="year-asc">Oldest</button>
+          <button class="sort-btn" data-sort="year-desc">Newest</button>
+        </div>
+        <div id="descList"></div>
+      </div>
+    </div>
+
+    <!-- TAB 2 · SONG ID -->
+    <div class="panel" id="panel-identify">
+      <div class="gap"></div>
+      <div class="listen-section">
+        <div style="font-size:14px;color:var(--subtle);font-weight:600">Hold to identify a song playing nearby</div>
+        <button class="listen-btn" id="listenBtn">🎵</button>
+        <div class="listen-hint" id="listenHint">Tap &amp; hold while music plays · needs AudD key in ⚙</div>
+      </div>
+      <div class="status-bar" id="idStatus"><div class="spin"></div><span id="idStatusText">Listening…</span></div>
+      <div class="err-box" id="idErr"></div>
+      <div class="id-result" id="idResult">
+        <div class="id-inner">
+          <img class="id-art" id="idArt" src="" alt="" style="display:none">
+          <div class="id-info">
+            <h3 id="idTitle">—</h3>
+            <p id="idArtist">—</p>
+            <p id="idAlbum" style="font-size:11px;color:var(--muted);margin-top:2px"></p>
+          </div>
+        </div>
+        <div class="platform-links" id="idLinks" style="margin-top:12px"></div>
+        <button class="btn-primary" id="idSimilar" style="margin-top:10px">Find similar songs →</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Share Modal -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <h3>Share this playlist</h3>
+    <div class="share-card" id="shareCard"></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" id="modalClose" style="flex:1">Close</button>
+      <button class="btn-copy" id="modalCopy">Copy text</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Globals ──
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let songIndex = 0;
+const state = { shown: [], lastQ: '', seedMode: null, idSong: null };
+
+function toast(msg,dur=2200){ const t=$('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),dur); }
+
+// ── Settings persistence ──
+const SETTINGS=['auddKey','apiBase','apiKey','apiModel'];
+window.addEventListener('load',()=>{ SETTINGS.forEach(k=>{ const v=localStorage.getItem('mf_'+k); if(v)$(k).value=v; }); });
+SETTINGS.forEach(k=>$(k).addEventListener('change',()=>{
+  localStorage.setItem('mf_'+k,$(k).value.trim());
+  if(k==='auddKey'&&$(k).value.trim()){
+    $('auddSaved').style.display='block';
+    setTimeout(()=>{ $('auddSaved').style.display='none'; },4000);
+  }
+}));
+$('settingsToggle').addEventListener('click',()=>$('settingsPanel').classList.toggle('on'));
+const getSetting=k=>$(k).value.trim()||localStorage.getItem('mf_'+k)||'';
+
+// ── Tabs ──
+document.querySelectorAll('.tab').forEach(tab=>{
+  tab.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    tab.classList.add('active');
+    $('panel-'+tab.dataset.tab).classList.add('active');
+  });
+});
+
+// ── Filters ──
+$('filterToggle').addEventListener('click',()=>{
+  $('filterBody').classList.toggle('open');
+  $('filterToggle').classList.toggle('open');
+});
+const selectedTags = { artist:[], genre:[], scene:[], fn:[], lang:[] };
+const tagColors = { artist:'sel', genre:'sel-blue', scene:'sel-green', fn:'sel', lang:'sel-purple' };
+document.querySelectorAll('.tag').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const g=btn.dataset.group, v=btn.textContent.trim();
+    const i=selectedTags[g].indexOf(v);
+    if(i>-1){selectedTags[g].splice(i,1);btn.classList.remove('sel','sel-blue','sel-green','sel-purple');}
+    else{selectedTags[g].push(v);btn.classList.add(tagColors[g]||'sel');}
+    const total=Object.values(selectedTags).flat().length;
+    $('filterCount').textContent=total>0?`(${total} active)`:'';
+  });
+});
+function getTagSummary(){
+  const p=[];
+  if(selectedTags.artist.length)p.push('Artist/voice: '+selectedTags.artist.join(', '));
+  if(selectedTags.genre.length)p.push('Genre: '+selectedTags.genre.join(', '));
+  if(selectedTags.scene.length)p.push('Scene: '+selectedTags.scene.join(', '));
+  if(selectedTags.fn.length)p.push('Function/mood: '+selectedTags.fn.join(', '));
+  if(selectedTags.lang.length)p.push('Language (must be one of): '+selectedTags.lang.join(', '));
+  return p.join('; ');
+}
+
+// ── iTunes enrichment ──
+async function itunesLookup(title,artist){
+  try{
+    const q=encodeURIComponent(title+' '+artist);
+    const r=await fetch(`https://itunes.apple.com/search?term=${q}&media=music&limit=3`);
+    const d=await r.json();
+    if(d.results&&d.results.length){
+      const h=d.results[0];
+      return {found:true,art:h.artworkUrl100?.replace('100x100','300x300')||'',appleUrl:h.trackViewUrl||'',album:h.collectionName||'',trackNum:h.trackNumber||null,trackCount:h.trackCount||null};
+    }
+  }catch(e){}
+  return {found:false};
+}
+
+// ── Links ──
+function songlinkURL(itunes, song){
+  // song.link accepts a streaming URL and generates a universal page
+  // Best: pass the iTunes/Apple Music track URL directly
+  if(itunes?.appleUrl) return `https://song.link/${encodeURIComponent(itunes.appleUrl)}`;
+  // Fallback: pass a Spotify search URL
+  const t=encodeURIComponent(song.title+' '+song.artist);
+  return `https://song.link/${encodeURIComponent('https://open.spotify.com/search/'+t)}`;
+}
+function platformLinksHTML(song,itunes){
+  const t=encodeURIComponent(song.title+' '+song.artist);
+  const sl=songlinkURL(itunes,song);
+  return [
+    `<a class="platform-btn songlink" href="${sl}" target="_blank">🔗 All platforms via song.link ↗</a>`,
+    `<a class="platform-btn spotify" href="https://open.spotify.com/search/${t}" target="_blank">Spotify ↗</a>`,
+    `<a class="platform-btn ytm" href="https://music.youtube.com/search?q=${t}" target="_blank">YouTube Music ↗</a>`,
+    `<a class="platform-btn amazon" href="https://music.amazon.com/search/${t}" target="_blank">Amazon ↗</a>`
+  ].join('');
+}
+function artistLinksHTML(artist){
+  const a=encodeURIComponent(artist);
+  return [
+    `<a class="artist-btn spotify-artist" href="https://open.spotify.com/search/${a}/artists" target="_blank">Spotify ↗</a>`,
+    `<a class="artist-btn apple-artist" href="https://music.apple.com/search?term=${a}" target="_blank">Apple Music ↗</a>`,
+    `<a class="artist-btn ig" href="https://www.instagram.com/${a.replace(/%20/g,'').toLowerCase()}" target="_blank">Instagram ↗</a>`,
+    `<a class="artist-btn tw" href="https://twitter.com/search?q=${a}&f=user" target="_blank">X ↗</a>`,
+    `<a class="artist-btn yt-ch" href="https://www.youtube.com/results?search_query=${a}+official&sp=EgIQAg%3D%3D" target="_blank">YouTube ↗</a>`
+  ].join('');
+}
+
+// ── Render song card (collapsed by default) ──
+function renderSong(song,container){
+  const idx=songIndex++;
+  const score=Math.min(99,Math.max(55,parseInt(song.match_score)||75));
+  const obs=Math.min(5,Math.max(1,parseInt(song.obscurity)||3));
+
+  // Pick 2 mini-tags for collapsed view (first genre + first mood/fn)
+  const miniTags=[
+    song.genres?.[0] && `<span class="song-mini-tag tx-genre">${esc(song.genres[0])}</span>`,
+    (song.moods?.[0]||song.functions?.[0]) && `<span class="song-mini-tag tx-mood">${esc(song.moods?.[0]||song.functions?.[0])}</span>`
+  ].filter(Boolean).join('');
+
+  const allTx=[
+    ...(song.genres||[]).map(g=>`<span class="tx-tag tx-genre">${esc(g)}</span>`),
+    ...(song.scenes||[]).map(s=>`<span class="tx-tag tx-scene">${esc(s)}</span>`),
+    ...(song.moods||[]).map(m=>`<span class="tx-tag tx-mood">${esc(m)}</span>`),
+    ...(song.functions||[]).map(f=>`<span class="tx-tag tx-fn">${esc(f)}</span>`)
+  ].join('');
+
+  const card=document.createElement('div');
+  card.className='song-card';
+  card.dataset.match=score;
+  card.dataset.obscurity=obs;
+  card.dataset.year=parseInt(song.year)||0;
+  card.dataset.rising=(parseInt(song.year)||0)>=2018&&obs<=2?1:0;
+
+  card.innerHTML=`
+    <!-- COLLAPSED HEADER (always visible) -->
+    <div class="song-card-header">
+      <div class="song-art-ph" id="art${idx}">♪</div>
+      <div class="song-header-info">
+        <div class="song-title">${esc(song.title)}</div>
+        <div class="song-artist">${esc(song.artist)}</div>
+      </div>
+      <div class="song-header-right">
+        <div class="song-score">${score}%</div>
+        <div class="song-mini-tags">${miniTags}</div>
+        <div class="expand-chevron">›</div>
+      </div>
+    </div>
+    <!-- thin match bar always visible -->
+    <div class="song-card-bar"><div class="song-card-bar-fill" id="bar${idx}" style="width:0%"></div></div>
+
+    <!-- EXPANDED DETAILS (hidden until tap) -->
+    <div class="song-details">
+      <div style="height:12px"></div>
+      <div class="song-album" id="album${idx}">${song.album?`${esc(song.album)} · `:''}${song.year||''} · ${esc(song.language||'')} · ${'●'.repeat(obs)}${'○'.repeat(5-obs)}</div>
+      <div class="verify-row"><span id="badge${idx}" class="badge-unverified">◌ verifying…</span></div>
+      ${allTx?`<div class="song-taxonomy">${allTx}</div>`:''}
+      <p class="song-reason">${esc(song.reason||'')}</p>
+      <div class="match-tags">${(song.match_points||[]).map(p=>`<span class="match-tag">${esc(p)}</span>`).join('')}</div>
+      <div class="card-section-lbl">Listen on</div>
+      <div class="platform-links" id="plat${idx}"><span style="font-size:12px;color:var(--muted)">Verifying…</span></div>
+      <div class="card-section-lbl">Follow ${esc(song.artist)}</div>
+      <div class="artist-links">${artistLinksHTML(song.artist)}</div>
+      <div style="margin-top:10px">
+        <button class="platform-btn seed-btn" data-t="${esc(song.title)}" data-a="${esc(song.artist)}">∿ Find songs similar to this</button>
+      </div>
+    </div>`;
+
+  container.appendChild(card);
+
+  // Animate thin bar immediately
+  requestAnimationFrame(()=>setTimeout(()=>{
+    const b=document.getElementById('bar'+idx);
+    if(b)b.style.width=score+'%';
+  },120));
+
+  // Toggle expand/collapse on header tap
+  card.querySelector('.song-card-header').addEventListener('click',()=>{
+    card.classList.toggle('open');
+  });
+
+  // Find similar button
+  card.querySelector('button[data-t]').addEventListener('click',function(e){
+    e.stopPropagation();
+    runSeedSearch(this.dataset.t,this.dataset.a);
+  });
+
+  // iTunes async enrichment
+  itunesLookup(song.title,song.artist).then(it=>{
+    const artEl=document.getElementById('art'+idx);
+    if(artEl&&it.found&&it.art){
+      const img=document.createElement('img');
+      img.className='song-art';img.src=it.art;img.alt=song.title;
+      artEl.replaceWith(img);
+    }
+    const albumEl=document.getElementById('album'+idx);
+    if(albumEl&&it.found){
+      let h=`${esc(it.album||song.album||'')}`;
+      if(it.trackNum)h+=` · Track ${it.trackNum}${it.trackCount?'/'+it.trackCount:''}`;
+      h+=` · ${song.year||''} · ${esc(song.language||'')} · ${'●'.repeat(obs)}${'○'.repeat(5-obs)}`;
+      albumEl.textContent=h;
+    }
+    const badge=document.getElementById('badge'+idx);
+    if(badge){
+      badge.className=it.found?'badge-verified':'badge-unverified';
+      badge.textContent=it.found?'✓ verified on Apple Music':'? unverified — check manually';
+    }
+    const plat=document.getElementById('plat'+idx);
+    if(plat)plat.innerHTML=platformLinksHTML(song,it);
+  });
+}
+
+// ── AI call (built-in Anthropic, or custom OpenAI-compatible relay) ──
+async function callAI(prompt,useSearch){
+  const base=getSetting('apiBase');
+  if(base){
+    // Custom OpenAI-compatible relay (e.g. openox.tech)
+    const r=await fetch(base.replace(/\/$/,'')+'/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+getSetting('apiKey')},
+      body:JSON.stringify({model:getSetting('apiModel')||'claude-sonnet-4-6',max_tokens:1500,messages:[{role:'user',content:prompt}]})
+    });
+    const d=await r.json();
+    if(d.error)throw new Error(d.error.message||'API error');
+    const text=d.choices?.[0]?.message?.content||'';
+    const clean=text.replace(/```json|```/g,'').trim();
+    return JSON.parse(clean.slice(clean.indexOf('{'),clean.lastIndexOf('}')+1));
+  }
+  // Built-in Anthropic API (works inside Claude preview)
+  const body={model:'claude-sonnet-4-20250514',max_tokens:1500,messages:[{role:'user',content:prompt}]};
+  if(useSearch)body.tools=[{type:'web_search_20250305',name:'web_search'}];
+  const r=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)
+  });
+  const d=await r.json();
+  if(d.error)throw new Error(d.error.message||'API error');
+  const text=(d.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
+  const clean=text.replace(/```json|```/g,'').trim();
+  return JSON.parse(clean.slice(clean.indexOf('{'),clean.lastIndexOf('}')+1));
+}
+
+// ── Prompt builder ──
+function buildPrompt(q,shown,seedMode){
+  const tags=getTagSummary();
+  const era=$('descEra').value,obs=$('descObs').value;
+  const count=parseInt($('descCount').value)||8;
+  const excl=shown.length?`\nExclude (already shown): ${shown.map(s=>s.t+' by '+s.a).join('; ')}`:'';
+  const filters=[tags,era&&'Era: '+era,obs&&'Obscurity: '+obs].filter(Boolean).join('; ');
+  const seedNote=seedMode?`\nThis is a SIMILARITY search. Seed song: "${seedMode.t}" by ${seedMode.a}. Find songs with similar emotional quality, sonic texture, or artistic DNA. Do NOT just list the same artist's songs. Be specific about each musical link.`:'';
+  return `You are an expert music curator — like a knowledgeable independent record store owner.
+
+User request: "${q}"${seedNote}
+${filters?'Filters: '+filters:''}${excl}
+
+Recommend exactly ${count} songs. STRICT rules:
+0. LYRIC DETECTION: If the user input looks like a lyric fragment (quoted text, partial sentence that sounds like song lyrics), first identify the song it's from, include it as the top result, then find similar songs to fill the rest of the list.
+1. Only REAL, commercially released songs on major streaming platforms. Never invent songs.
+2. Honor every constraint including negatives ("not X", "less Y").
+3. genres: 1-3 specific labels. scenes: 1-2 listening scenes. moods: 1-2 moods. functions: 1-2 from: Stress relief, Sleep aid, Energy boost, Feel-good, Motivational, Romantic, Concentration, Anger release, Meditation, Euphoric, Melancholy.
+4. match_score: integer 60-99. reason: max 2 sentences, specific curatorial voice. match_points: 2-3 short tags.
+5. album: exact album name. year: release year integer.
+6. language: precise — English, Mandarin, Cantonese, Taiwanese Hokkien, Japanese, Korean, Spanish, Portuguese, French, Italian, German, Russian, Swedish, Norwegian, Icelandic, Hindi, Tamil, Indonesian, Thai, Vietnamese, Arabic, Turkish, Swahili, Afrikaans, Multilingual, Instrumental, or other.
+7. obscurity: 1-5 (1=everyone knows it, 5=deep cut).
+
+Return ONLY valid compact JSON, no markdown fences, no extra text:
+{"playlist_title":"4-7 word evocative English title","songs":[{"title":"","artist":"","album":"","year":1994,"language":"English","genres":[""],"scenes":[""],"moods":[""],"functions":[""],"match_score":82,"reason":"","match_points":["",""],"obscurity":3}]}`;
+}
+
+// ── Search ──
+$('descGo').addEventListener('click',()=>runSearch(false));
+$('descMore').addEventListener('click',()=>runSearch(true));
+
+async function runSearch(more){
+  let q;
+  if(more){ q=state.lastQ; }
+  else{
+    q=$('descQuery').value.trim();
+    if(!q){$('descQuery').focus();return;}
+    state.shown=[];state.lastQ=q;state.seedMode=null;
+    $('seedBanner').classList.remove('on');
+  }
+  await doSearch(more);
+}
+
+async function runSeedSearch(title,artist){
+  state.shown=[];state.seedMode={t:title,a:artist};
+  state.lastQ=`Songs similar to "${title}" by ${artist}`;
+  $('seedBanner').innerHTML=`∿ Finding songs similar to <b>${esc(title)}</b> — ${esc(artist)}`;
+  $('seedBanner').classList.add('on');
+  window.scrollTo({top:0,behavior:'smooth'});
+  await doSearch(false);
+}
+
+async function doSearch(more){
+  $('descGo').disabled=true;
+  $('descErr').classList.remove('on');
+  $('descStatus').classList.add('on');
+  $('descStatusText').textContent=more?'Digging deeper…':'Searching the catalog…';
+  try{
+    const parsed=await callAI(buildPrompt(state.lastQ,state.shown,state.seedMode));
+    if(!more){
+      $('descList').innerHTML='';
+      $('descTitle').textContent=parsed.playlist_title||'Your playlist';
+      const bar=$('descSortBar');
+      bar.querySelectorAll('.sort-btn').forEach(b=>b.classList.remove('active'));
+      bar.querySelector('[data-sort="match"]').classList.add('active');
+    }
+    (parsed.songs||[]).forEach(s=>{state.shown.push({t:s.title,a:s.artist});renderSong(s,$('descList'));});
+    $('descResults').classList.add('on');
+  }catch(err){
+    $('descErr').textContent='Something went wrong: '+err.message+(getSetting('apiBase')?'':' — Note: built-in AI only works inside Claude preview. For deployed use, set your API relay in Settings ⚙.');
+    $('descErr').classList.add('on');
+  }finally{
+    $('descGo').disabled=false;
+    $('descStatus').classList.remove('on');
+  }
+}
+
+// ── Sort ──
+$('descSortBar').addEventListener('click',e=>{
+  const btn=e.target.closest('.sort-btn');
+  if(!btn)return;
+  $('descSortBar').querySelectorAll('.sort-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const list=$('descList');
+  const cards=Array.from(list.querySelectorAll('.song-card'));
+  const k=btn.dataset.sort;
+  cards.sort((a,b)=>{
+    switch(k){
+      case 'popular':return a.dataset.obscurity-b.dataset.obscurity;
+      case 'hidden':return b.dataset.obscurity-a.dataset.obscurity;
+      case 'rising':return b.dataset.rising-a.dataset.rising||b.dataset.year-a.dataset.year;
+      case 'year-asc':return a.dataset.year-b.dataset.year;
+      case 'year-desc':return b.dataset.year-a.dataset.year;
+      default:return b.dataset.match-a.dataset.match;
+    }
+  });
+  cards.forEach(c=>list.appendChild(c));
+});
+
+// ── Song ID (AudD) ──
+let mediaRecorder=null,audioChunks=[],isRecording=false;
+$('listenBtn').addEventListener('pointerdown',startRec);
+$('listenBtn').addEventListener('pointerup',stopRec);
+$('listenBtn').addEventListener('pointerleave',stopRec);
+
+async function startRec(){
+  if(isRecording)return;
+  if(!getSetting('auddKey')){
+    $('idErr').textContent='Add your AudD API key in Settings ⚙ to use Song ID. Free key at audd.io.';
+    $('idErr').classList.add('on');return;
+  }
+  $('idErr').classList.remove('on');
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    audioChunks=[];
+    mediaRecorder=new MediaRecorder(stream);
+    mediaRecorder.ondataavailable=e=>audioChunks.push(e.data);
+    mediaRecorder.start();
+    isRecording=true;
+    $('listenBtn').classList.add('recording');$('listenBtn').textContent='🔴';
+    $('listenHint').textContent='Listening… release when done (5–10s works best)';
+    $('idStatus').classList.add('on');$('idStatusText').textContent='Recording…';
+  }catch(e){
+    $('idErr').textContent='Microphone access denied. Allow mic access and try again.';
+    $('idErr').classList.add('on');
+  }
+}
+
+async function stopRec(){
+  if(!isRecording||!mediaRecorder)return;
+  isRecording=false;
+  $('listenBtn').classList.remove('recording');$('listenBtn').textContent='🎵';
+  $('idStatusText').textContent='Identifying…';
+  mediaRecorder.onstop=async()=>{
+    const blob=new Blob(audioChunks,{type:'audio/webm'});
+    const fd=new FormData();
+    fd.append('audio',blob,'rec.webm');
+    fd.append('api_token',getSetting('auddKey'));
+    fd.append('return','apple_music,spotify');
+    try{
+      const r=await fetch('https://api.audd.io/',{method:'POST',body:fd});
+      const d=await r.json();
+      if(d.status==='success'&&d.result)showIdResult(d.result);
+      else{$('idErr').textContent="Couldn't identify that. Hold longer while music is clearly audible.";$('idErr').classList.add('on');}
+    }catch(e){$('idErr').textContent='ID failed: '+e.message;$('idErr').classList.add('on');}
+    finally{$('idStatus').classList.remove('on');$('listenHint').textContent='Tap & hold while music plays · needs AudD key in ⚙';}
+    mediaRecorder.stream.getTracks().forEach(t=>t.stop());
+  };
+  mediaRecorder.stop();
+}
+
+function showIdResult(r){
+  $('idTitle').textContent=r.title||'Unknown';
+  $('idArtist').textContent=r.artist||'Unknown artist';
+  $('idAlbum').textContent=[r.album,r.release_date?.slice(0,4)].filter(Boolean).join(' · ');
+  const art=r.apple_music?.artwork?.url?.replace('{w}x{h}','300x300')||'';
+  if(art){$('idArt').src=art;$('idArt').style.display='';}
+  const links=[];
+  if(r.spotify?.external_urls?.spotify)links.push(`<a class="platform-btn spotify" href="${r.spotify.external_urls.spotify}" target="_blank">Spotify ↗</a>`);
+  if(r.apple_music?.url)links.push(`<a class="platform-btn apple" href="${r.apple_music.url}" target="_blank">Apple Music ↗</a>`);
+  const q=encodeURIComponent((r.title||'')+' '+(r.artist||''));
+  links.push(`<a class="platform-btn ytm" href="https://music.youtube.com/search?q=${q}" target="_blank">YouTube Music ↗</a>`);
+  $('idLinks').innerHTML=links.join('');
+  state.idSong=r;
+  $('idResult').classList.add('on');
+}
+
+$('idSimilar').addEventListener('click',()=>{
+  if(!state.idSong)return;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelector('[data-tab="describe"]').classList.add('active');
+  $('panel-describe').classList.add('active');
+  runSeedSearch(state.idSong.title||'',state.idSong.artist||'');
+});
+
+// ── Share ──
+$('descShare').addEventListener('click',()=>{
+  const title=$('descTitle').textContent;
+  const cards=$('descList').querySelectorAll('.song-card');
+  let html=`<div class="share-card-title">🎵 ${esc(title)}</div>`;
+  cards.forEach(c=>{
+    const t=c.querySelector('.song-title')?.textContent||'';
+    const a=c.querySelector('.song-artist')?.textContent||'';
+    html+=`<div class="share-song"><strong>${esc(t)}</strong> — ${esc(a)}</div>`;
+  });
+  html+=`<div class="share-footer">musicfunnel.app</div>`;
+  $('shareCard').innerHTML=html;
+  $('modalBg').classList.add('on');
+  $('modalCopy').onclick=()=>{
+    let txt=`🎵 ${title}\n\n`;
+    cards.forEach(c=>{txt+=`• ${c.querySelector('.song-title')?.textContent||''} — ${c.querySelector('.song-artist')?.textContent||''}\n`;});
+    txt+='\nfound on musicfunnel.app';
+    navigator.clipboard?.writeText(txt).then(()=>toast('Copied ✓')).catch(()=>toast('Copy manually'));
+    $('modalBg').classList.remove('on');
+  };
+});
+$('modalClose').addEventListener('click',()=>$('modalBg').classList.remove('on'));
+$('modalBg').addEventListener('click',e=>{if(e.target===$('modalBg'))$('modalBg').classList.remove('on');});
+</script>
+</body>
+</html>
